@@ -563,13 +563,6 @@
           this.fetchProducts();
         },
         
-        debounceSearch() {
-          clearTimeout(this.searchTimeout);
-          this.searchTimeout = setTimeout(() => {
-            this.fetchProducts();
-          }, 500);
-        },
-        
         async addToCart(product) {
           if (!this.isLoggedIn) {
             this.popupMessage = "Please log in to add items to your cart.";
@@ -742,18 +735,7 @@
         },
       },
       
-      computed: {
-        filteredProducts() {
-          console.log('🔍 filteredProducts computed - searchQuery:', this.searchQuery);
-          console.log('🔍 filteredProducts computed - products length:', this.products.length);
-          
-          if (this.searchQuery.trim()) {
-            this.fetchProducts();
-            return this.products;
-          }
-          return this.products;
-        },
-        
+      computed: {   
         sortedProducts() {
           console.log('🔄 sortedProducts computed - starting with:', this.filteredProducts.length, 'products');
           
