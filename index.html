@@ -479,6 +479,7 @@
           }
         },
         // Debounced search method
+        // Debounced search method
         debouncedSearch() {
           clearTimeout(this.searchTimeout);
           this.searchTimeout = setTimeout(() => {
@@ -492,7 +493,12 @@
           
           if (!this.searchQuery.trim()) {
             // If search is empty, show all products
-            this.products = [...this.allProducts];
+            if (Array.isArray(this.allProducts) && this.allProducts.length > 0) {
+              this.products = [...this.allProducts];
+            } else {
+              // If allProducts is not available, fetch all products
+              await this.fetchProducts();
+            }
             return;
           }
 
@@ -545,11 +551,16 @@
         // Clear search and show all products
         clearSearch() {
           this.searchQuery = '';
-          this.products = [...this.allProducts];
+          if (Array.isArray(this.allProducts) && this.allProducts.length > 0) {
+            this.products = [...this.allProducts];
+          } else {
+            // If allProducts is not available, fetch all products
+            this.fetchProducts();
+          }
         },
+
         async fetchProducts() {
           console.log('🔄 Starting fetchProducts...');
-          console.log('🔄 Current state - loading:', this.loading, 'errorMessage:', this.errorMessage);
           
           this.loading = true;
           this.errorMessage = "";
@@ -557,11 +568,9 @@
           try {
             const baseUrl = this.apiUrl;
             const collectionName = "Products";
-            const url = this.searchQuery.trim()
-              ? `${baseUrl}/collection/${collectionName}/search?q=${encodeURIComponent(this.searchQuery)}`
-              : `${baseUrl}/collection/${collectionName}`;
+            const url = `${baseUrl}/collection/${collectionName}`;
 
-            console.log('📡 Fetching products from:', url);
+            console.log('📡 Fetching all products from:', url);
             
             const response = await fetch(url, {
               method: 'GET',
@@ -569,9 +578,6 @@
                 'Content-Type': 'application/json',
               },
             });
-            
-            console.log('📊 Response status:', response.status);
-            console.log('📊 Response ok:', response.ok);
             
             if (!response.ok) {
               const errorText = await response.text();
@@ -581,9 +587,6 @@
 
             const data = await response.json();
             console.log('✅ Raw data received:', data);
-            console.log('✅ Data type:', typeof data);
-            console.log('✅ Is array:', Array.isArray(data));
-            console.log('✅ Data length:', data.length);
             
             if (!Array.isArray(data)) {
               console.error('❌ Data is not an array:', data);
@@ -591,25 +594,26 @@
             }
             
             // Process the products
-            this.products = data.map(product => {
+            const processedProducts = data.map(product => {
               if (product.image && !product.image.startsWith('http')) {
                 product.image = `${this.apiUrl}/images/${product.image.split("\\").pop()}`;
               }
               return product;
             });
             
-            console.log('✅ Products processed and stored:', this.products.length, 'items');
-            console.log('✅ First product:', this.products[0]);
+            // Store both all products and current products
+            this.allProducts = [...processedProducts];
+            this.products = [...processedProducts];
             
-            // Force Vue to update
-            this.$forceUpdate();
-            
-            this.loading = false;
-            console.log('✅ fetchProducts completed successfully');
+            console.log('✅ Products loaded:', this.products.length, 'items');
+            console.log('✅ AllProducts stored:', this.allProducts.length, 'items');
             
           } catch (error) {
             console.error("❌ Error fetching products:", error);
-            this.loading = false;
+            
+            // Initialize empty arrays on error to prevent iteration errors
+            this.allProducts = [];
+            this.products = [];
             
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
               this.errorMessage = "Unable to connect to server. Please check your internet connection.";
@@ -620,8 +624,8 @@
             } else {
               this.errorMessage = "Failed to load products. Please try again.";
             }
-            
-            console.log('❌ Error state set - errorMessage:', this.errorMessage);
+          } finally {
+            this.loading = false;
           }
         },
         
