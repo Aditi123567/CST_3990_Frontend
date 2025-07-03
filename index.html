@@ -158,9 +158,6 @@
       <!-- LOADING STATE -->
       <div v-if="loading" style="text-align: center; padding: 50px;">
         <p>Loading products...</p>
-        <div class="debug-info debug-warning">
-          🔄 Currently fetching products from: {{ apiUrl }}/collection/Products
-        </div>
       </div>
       
       <!-- ERROR STATE -->
@@ -168,9 +165,6 @@
         <h3>Unable to load products</h3>
         <p>{{ errorMessage }}</p>
         <button @click="retryLoadProducts" style="margin-top: 20px; padding: 10px 20px;">Retry</button>
-        <div class="debug-info debug-error">
-          ❌ Error occurred while fetching from: {{ apiUrl }}/collection/Products
-        </div>
       </div>
       
       <!-- PRODUCTS CONTENT -->
@@ -189,32 +183,17 @@
               <option value="asc">Ascending</option>
               <option value="desc">Descending</option>
             </select>
-            <div class="debug-info" style="margin-top: 10px;">
-              🔧 Sort: {{ sortCategory }} ({{ sortOrder }}) | Products: {{ products.length }} → Sorted: {{ sortedProducts.length }}
-            </div>
           </div>
           
           <main v-if="!checkoutPage">
             <!-- NO PRODUCTS MESSAGE -->
             <div v-if="products.length === 0 && !loading" style="text-align: center; padding: 50px;">
               <h3>No products available</h3>
-              <div class="debug-info debug-warning">
-                ⚠️ Products array is empty but no error occurred.<br>
-                This might mean:<br>
-                1. API returned empty array<br>
-                2. Data processing issue<br>
-                3. Database has no products<br>
-                4. Search query returned no results
-              </div>
             </div>
             
             <!-- SORTED PRODUCTS CHECK -->
             <div v-else-if="sortedProducts.length === 0 && products.length > 0" style="text-align: center; padding: 50px;">
               <h3>No products match current filters</h3>
-              <div class="debug-info debug-warning">
-                ⚠️ Raw products exist ({{ products.length }}) but sortedProducts is empty ({{ sortedProducts.length }}).<br>
-                This might be a filtering/sorting issue.
-              </div>
             </div>
             
             <!-- PRODUCTS GRID -->
