@@ -490,8 +490,8 @@
             const baseUrl = this.apiUrl;
             const collectionName = "Products";
             const url = this.searchQuery.trim()
-              ? `${baseUrl}/collection/${collectionName}/search?q=${encodeURIComponent(this.searchQuery)}`
-              : `${baseUrl}/collection/${collectionName}`;
+              ? `this.apiUrl/collection/${collectionName}/search?q=${encodeURIComponent(this.searchQuery)}`
+              : `this.apiUrl/collection/${collectionName}`;
 
             console.log('📡 Fetching products from:', url);
             
