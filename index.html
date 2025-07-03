@@ -139,9 +139,6 @@
         <h3>Unable to load products</h3>
         <p>{{ errorMessage }}</p>
         <button @click="retryLoadProducts" style="margin-top: 20px; padding: 10px 20px;">Retry</button>
-        <div class="debug-info debug-error">
-          ❌ Error occurred while fetching from: {{ apiUrl }}/collection/Products
-        </div>
       </div>
       
       <!-- PRODUCTS CONTENT -->
@@ -190,9 +187,6 @@
             
             <!-- PRODUCTS GRID -->
             <div v-else-if="sortedProducts.length > 0" class="products-grid">
-              <div class="debug-info debug-success">
-                ✅ Displaying {{ sortedProducts.length }} products
-              </div>
               <div v-for="product in sortedProducts" :key="product.id || product._id" class="product-item">
                 <img v-bind:src="product.image" @click="showBookDetails(product)" />
                 <h2 v-text="product.title"></h2>
