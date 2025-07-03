@@ -66,7 +66,7 @@
         <button class="nav-btn" v-if="isLoggedIn" @click="logout">Logout</button>
         <button class="nav-btn" v-else @click="currentPage='login'">Login</button>
         <div class="search-bar" v-if="currentPage==='products'" style="margin-left:30px;">
-          <input v-model="searchQuery" id="search" type="text" placeholder="Search for activities..." @input="fetchProducts"/>
+          <input v-model="searchQuery" id="search" type="text" placeholder="Search for books..." @input="debouncedSearch"/>
         </div>
         <button
           class="checkout-button"
@@ -478,7 +478,75 @@
             this.authError = 'Login failed. Please try again.';
           }
         },
+        // Debounced search method
+        debouncedSearch() {
+          clearTimeout(this.searchTimeout);
+          this.searchTimeout = setTimeout(() => {
+            this.performSearch();
+          }, 300); // Wait 300ms after user stops typing
+        },
 
+        // Perform the actual search
+        async performSearch() {
+          console.log('🔍 Performing search for:', this.searchQuery);
+          
+          if (!this.searchQuery.trim()) {
+            // If search is empty, show all products
+            this.products = [...this.allProducts];
+            return;
+          }
+
+          this.loading = true;
+          this.errorMessage = "";
+          
+          try {
+            const baseUrl = this.apiUrl;
+            const collectionName = "Products";
+            const url = `${baseUrl}/collection/${collectionName}/search?q=${encodeURIComponent(this.searchQuery)}`;
+
+            console.log('📡 Searching products at:', url);
+            
+            const response = await fetch(url, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Search results:', data);
+            
+            if (!Array.isArray(data)) {
+              throw new Error('Invalid search results format');
+            }
+            
+            // Process the search results
+            this.products = data.map(product => {
+              if (product.image && !product.image.startsWith('http')) {
+                product.image = `${this.apiUrl}/images/${product.image.split("\\").pop()}`;
+              }
+              return product;
+            });
+            
+            console.log('✅ Search completed:', this.products.length, 'results');
+            
+          } catch (error) {
+            console.error("❌ Search error:", error);
+            this.errorMessage = "Search failed. Please try again.";
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        // Clear search and show all products
+        clearSearch() {
+          this.searchQuery = '';
+          this.products = [...this.allProducts];
+        },
         async fetchProducts() {
           console.log('🔄 Starting fetchProducts...');
           console.log('🔄 Current state - loading:', this.loading, 'errorMessage:', this.errorMessage);
