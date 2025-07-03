@@ -13,7 +13,6 @@
     <h1 @click="goToLanding" style="cursor: pointer;">Rapid Read</h1>
   </header>
   <div id="app">
-
     <!-- LOGIN/REGISTER OVERLAY -->
     <div class="auth-overlay" v-if="currentPage === 'login' || currentPage === 'register'">
       <div class="auth-modal">
@@ -137,10 +136,6 @@
           🔄 Currently fetching products from: {{ apiUrl }}/collection/Products
         </div>
       </div>
-      <div v-if="products.length === 0 && !loading" style="text-align: center; padding: 50px;">
-              <h3>No products available</h3>
-              
-            </div>
       
       <!-- ERROR STATE -->
       <div v-if="errorMessage && !loading" style="text-align: center; padding: 50px; color: red;">
@@ -174,6 +169,19 @@
           </div>
           
           <main v-if="!checkoutPage">
+            <!-- NO PRODUCTS MESSAGE -->
+            <div v-if="products.length === 0 && !loading" style="text-align: center; padding: 50px;">
+              <h3>No products available</h3>
+              <div class="debug-info debug-warning">
+                ⚠️ Products array is empty but no error occurred.<br>
+                This might mean:<br>
+                1. API returned empty array<br>
+                2. Data processing issue<br>
+                3. Database has no products<br>
+                4. Search query returned no results
+              </div>
+            </div>
+            
             <!-- SORTED PRODUCTS CHECK -->
             <div v-else-if="sortedProducts.length === 0 && products.length > 0" style="text-align: center; padding: 50px;">
               <h3>No products match current filters</h3>
