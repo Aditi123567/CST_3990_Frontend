@@ -804,25 +804,12 @@
       },
       
       computed: {   
-        filteredProducts() {
-          console.log('🔍 filteredProducts computed - searchQuery:', this.searchQuery);
-          console.log('🔍 filteredProducts computed - products length:', this.products.length);
+       sortedProducts() {
+          console.log('🔄 sortedProducts computed - starting with:', this.products.length, 'products');
           
-          if (this.searchQuery.trim()) {
-            this.fetchProducts();
-            return this.products;
-          }
-          return this.products;
-        },
-        sortedProducts() {
-          console.log('🔄 sortedProducts computed - starting with:', this.filteredProducts.length, 'products');
+          let products = [...this.products];
           
-          let products = this.filteredProducts.slice();
-          
-          console.log('🔄 sortedProducts - before sorting:', products.length);
-          console.log('🔄 sortedProducts - sortCategory:', this.sortCategory);
-          console.log('🔄 sortedProducts - sortOrder:', this.sortOrder);
-          
+          // Apply sorting
           if (this.sortCategory === "price") {
             products.sort((a, b) =>
               this.sortOrder === "asc" ? a.price - b.price : b.price - a.price
