@@ -3,7 +3,7 @@
 <head>  
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RapidReads - Debug Version</title>
+  <title>RapidReads</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
@@ -79,6 +79,32 @@
       </div>
     </nav>
     
+    <!-- CHATBOT SIDE PANEL -->
+    <div class="chatbot-side-panel" v-if="showChatbot">
+      <div class="chatbot-header">
+        <span>💬 Rapid Read Chatbot</span>
+        <button @click="toggleChatbot" title="Close Chat">×</button>
+      </div>
+      <div class="chatbot-messages">
+        <div v-for="(message, index) in chatMessages" :key="index" :class="['message', message.sender]">
+          <div class="message-bubble">{{ message.text }}</div>
+        </div>
+      </div>
+      <div class="chatbot-input">
+        <input 
+          type="text" 
+          v-model="chatInput" 
+          @keyup.enter="sendMessage" 
+          placeholder="Type your message..." 
+          :disabled="chatLoading"
+        />
+        <button class="send-button" @click="sendMessage" :disabled="chatLoading">
+          <i class="fa-solid fa-paper-plane" v-if="!chatLoading"></i>
+          <i class="fa-solid fa-spinner fa-spin" v-else></i>
+        </button>
+      </div>
+    </div>
+    
     <!-- LANDING PAGE HERO -->
     <div v-if="currentPage==='landing'" class="landing-hero">
       <div class="landing-hero-left">
@@ -132,6 +158,9 @@
       <!-- LOADING STATE -->
       <div v-if="loading" style="text-align: center; padding: 50px;">
         <p>Loading products...</p>
+        <div class="debug-info debug-warning">
+          🔄 Currently fetching products from: {{ apiUrl }}/collection/Products
+        </div>
       </div>
       
       <!-- ERROR STATE -->
@@ -139,10 +168,13 @@
         <h3>Unable to load products</h3>
         <p>{{ errorMessage }}</p>
         <button @click="retryLoadProducts" style="margin-top: 20px; padding: 10px 20px;">Retry</button>
+        <div class="debug-info debug-error">
+          ❌ Error occurred while fetching from: {{ apiUrl }}/collection/Products
+        </div>
       </div>
       
       <!-- PRODUCTS CONTENT -->
-      <div class="container-flex" v-if="!loading && !errorMessage">
+      <div class="container-flex" :class="{ 'chatbot-open': showChatbot }" v-if="!loading && !errorMessage">
         <div class="main-content">
           
           <div class="filter-section" v-if="!checkoutPage" style="margin: 16px 0;">
@@ -157,8 +189,8 @@
               <option value="asc">Ascending</option>
               <option value="desc">Descending</option>
             </select>
-            <div class="debug-info">
-              🔧 Sort: {{ sortCategory }} ({{ sortOrder }})
+            <div class="debug-info" style="margin-top: 10px;">
+              🔧 Sort: {{ sortCategory }} ({{ sortOrder }}) | Products: {{ products.length }} → Sorted: {{ sortedProducts.length }}
             </div>
           </div>
           
@@ -188,7 +220,7 @@
             <!-- PRODUCTS GRID -->
             <div v-else-if="sortedProducts.length > 0" class="products-grid">
               <div v-for="product in sortedProducts" :key="product.id || product._id" class="product-item">
-                <img v-bind:src="product.image" @click="showBookDetails(product)" />
+                <img v-bind:src="product.image" @click="showBookDetails(product)" alt="Product Image" />
                 <h2 v-text="product.title"></h2>
                 <h3 v-text="product.author"></h3>
                 <p v-text="'Genre: ' + product.genre"></p>
@@ -312,6 +344,11 @@
         </div>
       </div>
     </div>
+    
+    <!-- CHATBOT TOGGLE BUTTON -->
+    <button class="chatbot-fab" @click="toggleChatbot" v-if="!showChatbot" title="Open Chat">
+      <i class="fa-solid fa-comment-dots"></i>
+    </button>
   </div>
 
   <script>
@@ -326,8 +363,9 @@
         sortOrder: "asc",
         showChatbot: false,
         chatInput: "",
+        chatLoading: false,
         chatMessages: [
-          { text: "Hello! How can I help you today?", sender: "bot" },
+          { text: "Hello! How can I help you find your next great book today?", sender: "bot" },
         ],
         showBookDetailsModal: false,
         selectedBook: null,
@@ -393,11 +431,73 @@
         },
 
         async registerUser() {
-          // ... existing registerUser code ...
+          console.log('Registering:', this.register);
+
+          try {
+            const response = await fetch(`${this.apiUrl}/auth/register`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(this.register),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              this.authToken = data.token;
+              this.user = data.user;
+              this.isLoggedIn = true;
+
+              // Clear form
+              this.register.firstName = '';
+              this.register.lastName = '';
+              this.register.email = '';
+              this.register.password = '';
+              this.authError = '';
+
+              this.currentPage = 'products';
+            } else {
+              this.authError = data.message || 'Registration failed';
+              console.error('Server says:', this.authError);
+            }
+          } catch (error) {
+            console.error('Registration error:', error);
+            this.authError = 'Registration failed. Could not reach server.';
+          }
         },
 
         async loginUser() {
-          // ... existing loginUser code ...
+          console.log('Logging in user with:', this.login);
+
+          try {
+            const response = await fetch(`${this.apiUrl}/auth/login`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.login),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              this.authError = errorData.message || 'Login failed';
+              console.error("Server says:", errorData.message);
+              return;
+            }
+
+            const data = await response.json();
+            this.authToken = data.token;
+            this.user = data.user;
+            this.isLoggedIn = true;
+
+            // Clear form and redirect
+            this.login.email = '';
+            this.login.password = '';
+            this.currentPage = 'products';
+            this.authError = '';
+          } catch (error) {
+            console.error("Login error:", error);
+            this.authError = 'Login failed. Please try again.';
+          }
         },
 
         async fetchProducts() {
@@ -492,11 +592,59 @@
         },
         
         async addToCart(product) {
-          // ... existing addToCart code ...
+          if (!this.isLoggedIn) {
+            this.popupMessage = "Please log in to add items to your cart.";
+            this.showPopup = true;
+            setTimeout(() => {
+              this.showPopup = false;
+            }, 3000);
+            this.currentPage = "login";
+            return;
+          }
+
+          try {
+            // Add to local cart immediately for better UX
+            this.cart.push(product);
+            product.AvailableInventory--;
+            this.cartitemcount++;
+            this.totalPrice += product.price;
+
+            // Optionally sync with backend
+            if (this.authToken) {
+              await fetch(`${this.apiUrl}/cart/add`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${this.authToken}`
+                },
+                body: JSON.stringify({
+                  productId: product.id,
+                  quantity: 1
+                })
+              });
+            }
+          } catch (error) {
+            console.error('Error adding to cart:', error);
+            // Revert changes if API call fails
+            this.cart.pop();
+            product.AvailableInventory++;
+            this.cartitemcount--;
+            this.totalPrice -= product.price;
+            
+            this.popupMessage = "Failed to add item to cart. Please try again.";
+            this.showPopup = true;
+            setTimeout(() => {
+              this.showPopup = false;
+            }, 3000);
+          }
         },
         
         removeFromCart(index) {
-          // ... existing removeFromCart code ...
+          const item = this.cart[index];
+          this.cart.splice(index, 1);
+          item.AvailableInventory++;
+          this.cartitemcount--;
+          this.totalPrice -= item.price;
         },
         
         canAddToCart(product) {
@@ -508,16 +656,82 @@
         },
         
         validateName(field) {
-          // ... existing validateName code ...
+          const value = this.order[field];
+          if (value && !/^[a-zA-Z\s]+$/.test(value)) {
+            this.order[field] = value.replace(/[^a-zA-Z\s]/g, "");
+          }
         },
         
         submitOrder() {
-          // ... existing submitOrder code ...
+          this.showModal = true;
+          this.cart = [];
+          this.cartitemcount = 0;
+          this.totalPrice = 0;
+          this.order = {
+            firstName: "",
+            lastName: "",
+            address: "",
+            city: "",
+            phone: null,
+          };
         },
         
         closeModal() {
           this.showModal = false;
           this.checkoutPage = false;
+        },
+        
+        toggleChatbot() {
+          this.showChatbot = !this.showChatbot;
+          console.log('🤖 Chatbot toggled:', this.showChatbot);
+        },
+        
+        async sendMessage() {
+          if (this.chatInput.trim() === "" || this.chatLoading) return;
+          
+          console.log('🤖 Sending message:', this.chatInput);
+          
+          // Add user message to chat
+          this.chatMessages.push({ text: this.chatInput, sender: "user" });
+          const userMessage = this.chatInput;
+          this.chatInput = "";
+          this.chatLoading = true;
+          
+          try {
+            const response = await fetch(`${this.apiUrl}/chatbot/respond`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ message: userMessage }),
+            });
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('🤖 Bot response:', data);
+            
+            this.chatMessages.push({ text: data.response, sender: "bot" });
+            
+            // Auto-scroll to bottom
+            this.$nextTick(() => {
+              const messagesContainer = document.querySelector('.chatbot-messages');
+              if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+              }
+            });
+            
+          } catch (error) {
+            console.error("🤖 Error sending message:", error);
+            this.chatMessages.push({ 
+              text: "Sorry, I'm having trouble connecting right now. Please try again later.", 
+              sender: "bot" 
+            });
+          } finally {
+            this.chatLoading = false;
+          }
         },
         
         showBookDetails(book) {
