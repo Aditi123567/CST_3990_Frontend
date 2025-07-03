@@ -137,6 +137,10 @@
           🔄 Currently fetching products from: {{ apiUrl }}/collection/Products
         </div>
       </div>
+      <div v-if="products.length === 0 && !loading" style="text-align: center; padding: 50px;">
+              <h3>No products available</h3>
+              
+            </div>
       
       <!-- ERROR STATE -->
       <div v-if="errorMessage && !loading" style="text-align: center; padding: 50px; color: red;">
