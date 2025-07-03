@@ -66,7 +66,7 @@
         <button class="nav-btn" v-if="isLoggedIn" @click="logout">Logout</button>
         <button class="nav-btn" v-else @click="currentPage='login'">Login</button>
         <div class="search-bar" v-if="currentPage==='products'" style="margin-left:30px;">
-          <input type="text" v-model="searchQuery" @input="debounceSearch" placeholder="Search...">
+          <input v-model="searchQuery" id="search" type="text" placeholder="Search for activities..." @input="fetchProducts"/>
         </div>
         <button
           class="checkout-button"
