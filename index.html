@@ -133,13 +133,6 @@
         <p>Loading products...</p>
       </div>
       
-      <!-- ERROR STATE -->
-      <div v-if="errorMessage && !loading" style="text-align: center; padding: 50px; color: red;">
-        <h3>Unable to load products</h3>
-        <p>{{ errorMessage }}</p>
-        <button @click="retryLoadProducts" style="margin-top: 20px; padding: 10px 20px;">Retry</button>
-      </div>
-      
       <div class="container-flex" v-if="!loading && !errorMessage">
         <div class="main-content">
           <!-- CHATBOT SIDE PANEL -->
